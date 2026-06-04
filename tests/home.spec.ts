@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Home page', () => {
   test('loads with correct title and UI elements', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: /QuizBlitz/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /WisQuiz/i })).toBeVisible();
     await expect(page.getByText(/10 questions/i)).toBeVisible();
     await expect(page.getByPlaceholder(/Enter nickname/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Solo Play/i })).toBeVisible();

@@ -8,7 +8,11 @@ import { ROUND_DURATION_MS } from '@/types/game';
  * Syncs with server time rather than running an independent timer,
  * so late-joiners see the correct remaining time.
  */
-export function useCountdown(roundStartedAt: number, active: boolean): number {
+export function useCountdown(
+  roundStartedAt: number,
+  active: boolean,
+  serverTime?: number
+): number {
   const [secondsLeft, setSecondsLeft] = useState(10);
   const rafRef = useRef<number | null>(null);
 
@@ -18,8 +22,10 @@ export function useCountdown(roundStartedAt: number, active: boolean): number {
       return;
     }
 
+    const serverTimeSkew = serverTime ? serverTime - Date.now() : 0;
+
     const tick = () => {
-      const elapsed = Date.now() - roundStartedAt;
+      const elapsed = Date.now() + serverTimeSkew - roundStartedAt;
       const remaining = Math.max(0, Math.ceil((ROUND_DURATION_MS - elapsed) / 1000));
       setSecondsLeft(remaining);
       if (remaining > 0) {
@@ -31,7 +37,7 @@ export function useCountdown(roundStartedAt: number, active: boolean): number {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [roundStartedAt, active]);
+  }, [roundStartedAt, active, serverTime]);
 
   return secondsLeft;
 }

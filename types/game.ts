@@ -64,6 +64,7 @@ export interface PublicGameRoom {
   totalRounds: number;
   roundStartedAt: number;
   maxPlayers: number;
+  serverTime: number;
 }
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────

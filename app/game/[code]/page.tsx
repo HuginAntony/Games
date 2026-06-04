@@ -45,7 +45,11 @@ function GamePageInner() {
   });
 
   const isQuestionPhase = gameState?.phase === "question";
-  const secondsLeft = useCountdown(gameState?.roundStartedAt ?? 0, isQuestionPhase);
+  const secondsLeft = useCountdown(
+    gameState?.roundStartedAt ?? 0,
+    isQuestionPhase,
+    gameState?.serverTime
+  );
 
   // Animated 3-2-1 countdown
   const [countdownNum, setCountdownNum] = useState(3);

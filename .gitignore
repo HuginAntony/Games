@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+test-results/.playwright-artifacts-0/1f87a730607eb1ce694eb5f471b2632e.png
+test-results/.playwright-artifacts-0/8d986dba8c18ba3d64f75b93829a3a0e.png
+test-results/.playwright-artifacts-0/8f62a4815b81deb542a44e6a8039ba2a.png
+test-results/.playwright-artifacts-0/8f79f2839850c42892847eaca6f96752.png
+test-results/.playwright-artifacts-0/83dd28e89f87f1367a2a469b6d733c7f.png
+test-results/.playwright-artifacts-0/5998d8df79246b30e13d58c8b5c04c99.png
+test-results/.playwright-artifacts-0/68198b30d5463531212e45456c834e3c.png
+test-results/.playwright-artifacts-0/4313248ea715256a6ed5eeab45cbe9de.png
+test-results/.playwright-artifacts-0/c9c5a48eee84c9ffbacb29fab0fc8c16.png
+test-results/.playwright-artifacts-0/ca796d1f544c46bcedc52941acb5b4b8.png
+test-results/.playwright-artifacts-0/d8d45c7135481c1d665a347fab5df2c2.png
+test-results/.playwright-artifacts-0/d86f36910cc8d0da05d56d8c51ed4537.png
+test-results/.playwright-artifacts-0/e8e55d35cb8d739e0a8b71ebdc441e63.png
+test-results/.playwright-artifacts-0/fdaabbf77c6b17127c20cb64fef5aca0.png

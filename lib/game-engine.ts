@@ -177,6 +177,7 @@ export function toPublicRoom(room: GameRoom): PublicGameRoom {
     totalRounds: room.totalRounds,
     roundStartedAt: room.roundStartedAt,
     maxPlayers: room.maxPlayers,
+    serverTime: Date.now(),
   };
 }
 

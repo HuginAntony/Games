@@ -44,7 +44,7 @@ export default function HomePage() {
     <main className={styles.page}>
       <div className={styles.hero}>
         <div className={styles.icon}>&#9889;</div>
-        <h1 className={styles.title}>Quiz<span className={styles.accent}>Blitz</span></h1>
+        <h1 className={styles.title}>Wis<span className={styles.accent}>Quiz</span></h1>
         <p className={styles.subtitle}>10 questions &middot; 10 seconds each &middot; General Knowledge</p>
       </div>
       <div className={styles.card}>
