@@ -1,5 +1,5 @@
 {
   "env": {
-    "NEXT_PUBLIC_PARTYKIT_HOST": "quiz-game.huginantony.partykit.dev"
+    "NEXT_PUBLIC_PARTYKIT_HOST": "https://quiz-game.huginantony.partykit.dev/"
   }
 }
