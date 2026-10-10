@@ -1,28 +1,33 @@
 {
-  "name": "quiz-game",
-  "version": "0.1.0",
+  "name": "wisquiz",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npx partykit dev\" \"next dev\"",
+    "dev": "concurrently \"wrangler dev --port 1999\" \"next dev\"",
     "dev:next": "next dev",
-    "dev:party": "npx partykit dev",
+    "dev:party": "wrangler dev --port 1999",
     "build": "next build",
     "start": "next start",
-    "deploy:party": "npx partykit deploy",
+    "deploy:party": "wrangler deploy --env \"\"",
     "type-check": "tsc --noEmit",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:engine": "tsx --test tests/engine.test.ts",
+    "deploy:check": "wrangler deploy --env \"\" --dry-run",
+    "test:pwa": "playwright test -c playwright.production.config.ts",
+    "test:transport": "tsx --test tests/transport.test.ts",
+    "test:restart": "tsx --test tests/restart.test.ts"
   },
   "dependencies": {
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
     "next": "16.2.0",
-    "partykit": "^0.0.115",
     "partysocket": "^1.1.16",
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "partyserver": "^0.5.10"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
@@ -30,6 +35,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "concurrently": "^9.1.0",
-    "typescript": "^5"
-  }
+    "typescript": "^5",
+    "wrangler": "^4",
+    "@cloudflare/workers-types": "^4",
+    "tsx": "^4"
+  },
+  "packageManager": "pnpm@11.25.0"
 }

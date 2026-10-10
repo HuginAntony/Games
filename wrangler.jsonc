@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wisquiz-multiplayer",
+  "main": "server/worker.ts",
+  "compatibility_date": "2026-10-09",
+  "durable_objects": { "bindings": [{ "name": "Game", "class_name": "Game" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Game"] }],
+  "observability": { "enabled": false },
+  "env": {
+    "test": { "name": "wisquiz-test", "vars": { "QUIZ_QUESTION_SOURCE": "curated" }, "durable_objects": { "bindings": [{ "name": "Game", "class_name": "Game" }] }, "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Game"] }] }
+  }
+}

@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/.validation-worker/
+/.wrangler/
+/test-results/
+/playwright-report/
+/.validation/
 
 # next.js
 /.next/

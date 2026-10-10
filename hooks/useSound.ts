@@ -84,12 +84,12 @@ function synthesise(ctx: AudioContext, name: SoundName) {
 
 export function useSound() {
   const ctxRef = useRef<AudioContext | null>(null);
-  const mutedRef = useRef<boolean>(false);
+  const mutedRef = useRef<boolean>(true);
 
   // Initialise mute state from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    mutedRef.current = localStorage.getItem('quizblitz-muted') === 'true';
+    try { mutedRef.current = localStorage.getItem('quizblitz-muted') !== 'false'; } catch { mutedRef.current = true; }
   }, []);
 
   // Lazily create AudioContext on first user interaction (browser requirement)
@@ -104,6 +104,7 @@ export function useSound() {
   }, []);
 
   const play = useCallback((name: SoundName) => {
+    try { mutedRef.current = localStorage.getItem('quizblitz-muted') !== 'false'; } catch { /* Use session mute. */ }
     if (mutedRef.current) return;
     const ctx = getCtx();
     if (!ctx) return;
@@ -117,12 +118,13 @@ export function useSound() {
   const toggleMute = useCallback(() => {
     mutedRef.current = !mutedRef.current;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('quizblitz-muted', String(mutedRef.current));
+      try { localStorage.setItem('quizblitz-muted', String(mutedRef.current)); } catch { /* Storage optional. */ }
     }
     return mutedRef.current;
   }, []);
 
   const isMuted = useCallback(() => mutedRef.current, []);
 
+  useEffect(() => () => { ctxRef.current?.close().catch(() => {}); }, []);
   return { play, toggleMute, isMuted };
 }

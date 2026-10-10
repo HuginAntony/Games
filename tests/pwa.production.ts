@@ -1,0 +1,21 @@
+import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+test('production shell precaches solo practice, then starts and reveals a question offline', async ({ page, context }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+  await page.reload();
+  fs.mkdirSync('docs/revamp/implementation', { recursive: true });
+  await page.screenshot({ path: 'docs/revamp/implementation/production-lounge.png', fullPage: true });
+  await context.setOffline(true);
+  await page.getByRole('link', { name: 'Play starter pack offline →' }).click();
+  await expect(page.locator('.question-title')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.answer-card')).toHaveCount(4);
+  await expect(page.getByText('Starter pack · difficulty may vary.', { exact: false })).toBeVisible();
+  await page.locator('.answer-card').first().click();
+  await expect(page.locator('.correct')).toHaveCount(1);
+  await page.screenshot({ path: 'docs/revamp/implementation/production-offline-reveal.png', fullPage: true });
+  expect(errors).toEqual([]);
+  await context.setOffline(false);
+});

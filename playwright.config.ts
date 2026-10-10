@@ -1,33 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
-
-/**
- * Playwright configuration for QuizBlitz smoke tests.
- * Runs against the Next.js dev server (auto-started by webServer).
- * PartyKit must be started separately for multiplayer tests.
- */
+import path from 'node:path';
 export default defineConfig({
-  testDir: './tests',
-  testMatch: '**/*.spec.ts',
-  fullyParallel: false,
-  retries: process.env.CI ? 2 : 0,
-  workers: 1,
-  timeout: 30_000,
+  testDir: './tests', testMatch: '**/*.spec.ts', fullyParallel: false, workers: 1,
+  retries: process.env.CI ? 1 : 0, timeout: 45000,
   reporter: [['html', { open: 'never' }], ['list']],
-  use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-  },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+  use: { baseURL: 'http://127.0.0.1:3000', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  webServer: [
+    { command: 'node node_modules/next/dist/bin/next dev --hostname 127.0.0.1', url: 'http://127.0.0.1:3000', reuseExistingServer: !process.env.CI, timeout: 60000 },
+    { command: 'node node_modules/wrangler/bin/wrangler.js dev --env test --port 1999 --ip 127.0.0.1', url: 'http://127.0.0.1:1999/health', reuseExistingServer: !process.env.CI, timeout: 60000, env: { XDG_CONFIG_HOME: path.resolve('.validation-worker/config'), WRANGLER_LOG_PATH: path.resolve('.validation-worker/logs'), WRANGLER_SEND_METRICS: 'false' } },
   ],
-  webServer: {
-    command: 'npm run dev:next',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 60_000,
-  },
 });

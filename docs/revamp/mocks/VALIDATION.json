@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-09",
+  "scope": "static artifact checks only",
+  "htmlIds": 23,
+  "screenTargets": [
+    "handoff",
+    "home",
+    "lobby",
+    "question",
+    "results",
+    "reveal"
+  ],
+  "uniqueIds": true,
+  "allNavigationTargetsExist": true,
+  "allScriptIdTargetsExist": true,
+  "javascriptSyntax": "passed",
+  "browserVisualQA": "not run: in-app browser blocks file URLs; no workaround attempted",
+  "applicationTests": "not run: application code unchanged",
+  "conceptImage": "visually inspected generated board",
+  "limitations": [
+    "Mock state only; no actual multiplayer, timer or audio",
+    "Responsive CSS supplied; actual viewport bounds not browser-verified"
+  ]
+}

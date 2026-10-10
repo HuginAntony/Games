@@ -1,59 +1,34 @@
 import { test, expect } from '@playwright/test';
-
-/**
- * Home page smoke tests — verifies UI loads and navigation works correctly.
- * These tests require only the Next.js server; PartyKit is NOT needed.
- */
-
-test.describe('Home page', () => {
-  test('loads with correct title and UI elements', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('heading', { name: /WisQuiz/i })).toBeVisible();
-    await expect(page.getByText(/10 questions/i)).toBeVisible();
-    await expect(page.getByPlaceholder(/Enter nickname/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /Solo Play/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Create Room/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Join Room/i })).toBeVisible();
-  });
-
-  test('shows error when clicking Solo Play without a nickname', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Solo Play/i }).click();
-    // The sub-panel appears — click "Start Solo Game" without a nickname
-    await page.getByRole('button', { name: /Start Solo Game/i }).click();
-    await expect(page.getByText(/Enter a nickname/i)).toBeVisible();
-  });
-
-  test('navigates to solo game after entering nickname', async ({ page }) => {
-    await page.goto('/');
-    await page.getByPlaceholder(/Enter nickname/i).fill('TestPlayer');
-    await page.getByRole('button', { name: /Solo Play/i }).click();
-    await page.getByRole('button', { name: /Start Solo Game/i }).click();
-    // Should navigate to /game/solo?name=TestPlayer
-    await expect(page).toHaveURL(/\/game\/solo/);
-  });
-
-  test('shows room code input when Join Room is clicked', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Join Room/i }).click();
-    await expect(page.getByPlaceholder(/ABCD12/i)).toBeVisible();
-  });
-
-  test('shows error when joining with invalid room code', async ({ page }) => {
-    await page.goto('/');
-    await page.getByPlaceholder(/Enter nickname/i).fill('TestPlayer');
-    await page.getByRole('button', { name: /Join Room/i }).click();
-    await page.getByRole('button', { name: /Join Room/i }).last().click();
-    await expect(page.getByText(/valid room code/i)).toBeVisible();
-  });
-
-  test('navigates to lobby when Create Room is clicked with a nickname', async ({ page }) => {
-    await page.goto('/');
-    await page.getByPlaceholder(/Enter nickname/i).fill('HostPlayer');
-    await page.getByRole('button', { name: /Create Room/i }).click();
-    await page.getByRole('button', { name: /Create Room/i }).last().click();
-    // Should navigate to /lobby/[CODE]?name=HostPlayer&host=1
-    await expect(page).toHaveURL(/\/lobby\//);
-    await expect(page.getByText(/Waiting Room/i)).toBeVisible();
-  });
+test('lounge preserves simultaneous multiplayer and validates join', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Good company. Great questions.' })).toBeVisible();
+  await expect(page.getByText('No waiting for turns', { exact: false })).toBeVisible();
+  await expect(page.getByText('Pass & play', { exact: false })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Join with code' }).click();
+  await page.getByRole('button', { name: 'Join room →' }).click();
+  await expect(page.locator('main [role=alert]')).toContainText('Enter a nickname');
+  await page.getByLabel('Your nickname').fill('Tester');
+  await page.getByRole('button', { name: 'Join room →' }).click();
+  await expect(page.locator('main [role=alert]')).toContainText('six-character');
+});
+test('appearance is accessible and persists through navigation', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Appearance' }).click();
+  await page.getByLabel('Table theme').selectOption('prism');
+  await page.getByLabel('Reduce motion').check();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'prism');
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
+  await page.getByRole('button', { name: 'Appearance' }).click();
+  await expect(page.getByLabel('Table theme')).toHaveValue('prism');
+});
+test('solo setup passes selected settings and name', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Solo practice →' }).click();
+  await page.getByLabel('Your nickname').fill('Curious');
+  await page.getByLabel('Questions', { exact: true }).selectOption('5');
+  await page.getByLabel('Untimed practice').check();
+  await page.getByRole('button', { name: 'Start solo practice →' }).click();
+  await expect(page).toHaveURL(/game\/solo.*name=Curious/);
+  await expect(page).toHaveURL(/untimed=1/);
 });

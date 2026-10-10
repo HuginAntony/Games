@@ -1,8 +1,0 @@
-{
-  "name": "quiz-game",
-  "main": "party/game.ts",
-  "parties": {
-    "game": "party/game.ts"
-  },
-  "port": 1999
-}

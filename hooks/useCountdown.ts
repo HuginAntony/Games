@@ -1,43 +1,16 @@
 'use client';
-
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ROUND_DURATION_MS } from '@/types/game';
-
-/**
- * Drives a client-side 10-second countdown derived from the server's roundStartedAt timestamp.
- * Syncs with server time rather than running an independent timer,
- * so late-joiners see the correct remaining time.
- */
-export function useCountdown(
-  roundStartedAt: number,
-  active: boolean,
-  serverTime?: number
-): number {
-  const [secondsLeft, setSecondsLeft] = useState(10);
-  const rafRef = useRef<number | null>(null);
-
+/** Derives the timer from the room deadline and server clock; background tabs catch up. */
+export function useCountdown(roundStartedAt: number, active: boolean, serverTime?: number, durationMs = ROUND_DURATION_MS): number {
+  const [secondsLeft, setSecondsLeft] = useState(Math.ceil(durationMs / 1000));
   useEffect(() => {
-    if (!active || roundStartedAt === 0) {
-      setSecondsLeft(10);
-      return;
-    }
-
-    const serverTimeSkew = serverTime ? serverTime - Date.now() : 0;
-
-    const tick = () => {
-      const elapsed = Date.now() + serverTimeSkew - roundStartedAt;
-      const remaining = Math.max(0, Math.ceil((ROUND_DURATION_MS - elapsed) / 1000));
-      setSecondsLeft(remaining);
-      if (remaining > 0) {
-        rafRef.current = requestAnimationFrame(tick);
-      }
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [roundStartedAt, active, serverTime]);
-
+    if (!active || !roundStartedAt) { setSecondsLeft(Math.ceil(durationMs / 1000)); return; }
+    const offset = serverTime ? serverTime - Date.now() : 0;
+    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((roundStartedAt + durationMs - Date.now() - offset) / 1000)));
+    tick();
+    const interval = setInterval(tick, 100);
+    return () => clearInterval(interval);
+  }, [roundStartedAt, active, serverTime, durationMs]);
   return secondsLeft;
 }

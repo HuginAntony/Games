@@ -1,84 +1,38 @@
-import { test, expect, Page } from '@playwright/test';
-
-/**
- * Solo game smoke tests — verifies question loading, answer selection,
- * timer behaviour, and the done screen.
- *
- * These tests run against the live Next.js + OpenTDB API.
- * They mock the /api/questions endpoint to avoid rate-limiting and ensure determinism.
- */
-
-const MOCK_QUESTIONS = Array.from({ length: 10 }, (_, i) => ({
-  category: 'General Knowledge',
-  question: `Test question ${i + 1}`,
-  answers: ['Answer A', 'Answer B', 'Answer C', 'Answer D'],
-  correctIndex: 0,
-}));
-
-async function interceptQuestions(page: Page) {
-  await page.route('**/api/questions**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(MOCK_QUESTIONS),
-    });
-  });
-}
-
-test.describe('Solo game', () => {
-  test('loads question card after starting', async ({ page }) => {
-    await interceptQuestions(page);
-    await page.goto('/game/solo?name=Tester');
-    // Wait for question to appear (API must resolve)
-    await expect(page.getByText(/Test question 1/i)).toBeVisible({ timeout: 10_000 });
-    // Timer ring should be visible (CountdownRing has aria-label="N seconds left")
-    await expect(page.getByLabel(/seconds left/i)).toBeVisible();
-    // Four answer buttons
-    const answers = page.getByRole('button', { name: /Answer [ABCD]/i });
-    await expect(answers).toHaveCount(4);
-  });
-
-  test('clicking an answer disables all buttons and shows reveal', async ({ page }) => {
-    await interceptQuestions(page);
-    await page.goto('/game/solo?name=Tester');
-    await expect(page.getByText(/Test question 1/i)).toBeVisible({ timeout: 10_000 });
-
-    // Click the first answer button
-    await page.getByRole('button', { name: /Answer A/i }).click();
-
-    // All answer buttons should now be disabled
-    const buttons = page.locator('[class*="answerBtn"]');
-    for (const btn of await buttons.all()) {
-      await expect(btn).toBeDisabled();
-    }
-    // "Round Result" label should appear
-    await expect(page.getByText(/Round Result/i)).toBeVisible({ timeout: 5_000 });
-  });
-
-  test('advances through all 10 questions and shows done screen', async ({ page }) => {
-    // Each question has a 3-second reveal phase → 10 × 3s = 30s minimum.
-    // Set a generous timeout so CI doesn't flake.
-    test.setTimeout(90_000);
-    // Shorten the reveal delay with a time override isn't possible — just click fast
-    await interceptQuestions(page);
-    await page.goto('/game/solo?name=Tester');
-
-    for (let q = 0; q < 10; q++) {
-      await expect(page.getByText(new RegExp(`Test question ${q + 1}`))).toBeVisible({ timeout: 10_000 });
-      await page.getByRole('button', { name: /Answer A/i }).click();
-      // Wait for next question or done screen
-      if (q < 9) {
-        await expect(page.getByText(new RegExp(`Q ${q + 2}`))).toBeVisible({ timeout: 10_000 });
-      }
-    }
-
-    await expect(page.getByText(/Well Played/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: /Play Again/i })).toBeVisible();
-  });
-
-  test('shows progress indicator', async ({ page }) => {
-    await interceptQuestions(page);
-    await page.goto('/game/solo?name=Tester');
-    await expect(page.getByText(/Q 1 \/ 10/i)).toBeVisible({ timeout: 10_000 });
-  });
+import { test, expect } from '@playwright/test';
+const questions = Array.from({ length: 5 }, (_, i) => ({ category: 'General', question: `A safe test question ${i + 1}`, answers: ['First answer', 'Second answer', 'Third answer', 'Fourth answer'], correctIndex: 0 }));
+test('solo reveals for the full reading duration under reduced motion and reviews a full match', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.clock.install();
+  await page.route('**/api/questions**', route => route.fulfill({ json: questions, headers: { 'X-Quiz-Source': 'opentdb' } }));
+  await page.goto('/game/solo?name=Tester&rounds=5&untimed=1&revealSeconds=5');
+  for (let index = 0; index < 5; index++) {
+    await expect(page.locator('.question-title')).toHaveText(questions[index].question);
+    await page.getByRole('button', { name: 'Answer A: First answer', exact: true }).click();
+    await expect(page.getByRole('status')).toHaveText('Correct. Nicely played.');
+    await expect(page.locator('.points')).toHaveText('+100');
+    await page.clock.fastForward(4900);
+    await expect(page.locator('.question-title')).toHaveText(questions[index].question);
+    await page.clock.fastForward(200);
+  }
+  await expect(page.getByRole('heading', { name: 'Final standings' })).toBeVisible();
+  await expect(page.getByText('500 points', { exact: true }).first()).toBeVisible();
+  await expect(page.locator('.review-list details')).toHaveCount(5);
+  await page.locator('.review-list summary').first().click();
+  await expect(page.getByText('Correct answer: First answer').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Play again →' }).click();
+  await expect(page.locator('.question-title')).toHaveText(questions[0].question);
+});
+test('provider failure falls back to a playable local pack without injected markup', async ({ page }) => {
+  await page.route('**/api/questions**', route => route.abort());
+  await page.goto('/game/solo?name=Tester&rounds=5');
+  await expect(page.locator('.question-title')).toBeVisible();
+  await expect(page.getByText('Starter pack · difficulty may vary.', { exact: false })).toBeVisible();
+  await expect(page.locator('.answer-card')).toHaveCount(4);
+  await expect(page.locator('.answer-card').first()).toBeEnabled();
+});
+test('untrusted content is rendered as text', async ({ page }) => {
+  await page.route('**/api/questions**', route => route.fulfill({ json: questions.map(q => ({ ...q, question: '<img src=x onerror=alert(1)>', answers: ['<script>alert(1)</script>', 'B', 'C', 'D'] })) }));
+  await page.goto('/game/solo?rounds=5');
+  await expect(page.locator('.question-title')).toHaveText('<img src=x onerror=alert(1)>');
+  await expect(page.locator('.quiz-table img,.quiz-table script')).toHaveCount(0);
 });

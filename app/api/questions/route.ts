@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
-import { fetchQuestionsFromOtdb } from '@/lib/opentdb';
+import { loadQuestionDeck } from '@/lib/opentdb';
+import { validateSettings } from '@/lib/game-engine';
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const amount = Math.min(50, Math.max(1, parseInt(searchParams.get('amount') || '10', 10)));
-    const questions = await fetchQuestionsFromOtdb(amount);
-    return NextResponse.json(questions);
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error('Questions API error:', msg);
-    const status = msg.includes('rate limit') || msg.includes('code 5') ? 429 : 503;
-    return NextResponse.json({ error: msg }, { status });
+    const params = new URL(request.url).searchParams;
+    const settings = validateSettings({
+      ...(params.has('amount') ? { rounds: Number(params.get('amount')) } : {}),
+      ...(params.has('category') ? { category: params.get('category') } : {}),
+      ...(params.has('difficulty') ? { difficulty: params.get('difficulty') } : {}),
+    });
+    const deck = await loadQuestionDeck(settings, process.env.QUIZ_QUESTION_SOURCE === 'curated');
+    return NextResponse.json(deck.questions, { headers: { 'X-Quiz-Source': deck.source, 'Cache-Control': 'no-store' } });
+  } catch {
+    return NextResponse.json({ error: 'Invalid question settings.' }, { status: 400 });
   }
 }

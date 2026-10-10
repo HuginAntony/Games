@@ -1,67 +1,21 @@
 'use client';
-
-import { useState, useEffect } from 'react';
-import styles from './QuestionCard.module.css';
-
-interface QuestionCardProps {
-  question: string;
-  category: string;
-  answers: string[];
-  correctIndex?: number;
-  selectedIndex: number | null;
-  onAnswer: (index: number) => void;
-  disabled: boolean;
-}
-
-export function QuestionCard({
-  question,
-  category,
-  answers,
-  correctIndex,
-  selectedIndex,
-  onAnswer,
-  disabled,
-}: QuestionCardProps) {
-  const [revealed, setRevealed] = useState(false);
-
+import { useEffect } from 'react';
+interface QuestionCardProps { question: string; category: string; answers: string[]; correctIndex?: number; selectedIndex: number | null; onAnswer: (index: number) => void; disabled: boolean }
+export function QuestionCard({ question, answers, correctIndex, selectedIndex, onAnswer, disabled }: QuestionCardProps) {
   useEffect(() => {
-    if (correctIndex !== undefined) {
-      // Trigger flip reveal animation
-      const t = setTimeout(() => setRevealed(true), 50);
-      return () => clearTimeout(t);
-    } else {
-      setRevealed(false);
-    }
-  }, [correctIndex]);
-
-  function getAnswerClass(idx: number): string {
-    const classes = [styles.answerBtn];
-    if (selectedIndex === idx) classes.push(styles.selected);
-    if (revealed && correctIndex !== undefined) {
-      if (idx === correctIndex) classes.push(styles.correct);
-      else if (idx === selectedIndex) classes.push(styles.wrong);
-    }
-    return classes.join(' ');
-  }
-
-  return (
-    <div className={styles.card}>
-      <div className={styles.category}>{category}</div>
-      <div className={styles.question} dangerouslySetInnerHTML={{ __html: question }} />
-      <div className={styles.answers}>
-        {answers.map((answer, idx) => (
-          <button
-            key={idx}
-            className={getAnswerClass(idx)}
-            onClick={() => !disabled && onAnswer(idx)}
-            disabled={disabled}
-            aria-label={`Answer ${idx + 1}: ${answer}`}
-          >
-            <span className={styles.answerLabel}>{String.fromCharCode(65 + idx)}</span>
-            <span dangerouslySetInnerHTML={{ __html: answer }} />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+    const keyboard = (event: KeyboardEvent) => {
+      if (disabled || event.altKey || event.ctrlKey || event.metaKey || event.repeat || !/^[1-4]$/.test(event.key)) return;
+      const target = event.target as HTMLElement;
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable) return;
+      const index = Number(event.key) - 1;
+      if (index < answers.length) onAnswer(index);
+    };
+    window.addEventListener('keydown', keyboard);
+    return () => window.removeEventListener('keydown', keyboard);
+  }, [disabled, answers.length, onAnswer]);
+  return <><h2 className="question-title" id="question-title">{question}</h2><div className="answer-grid" role="group" aria-labelledby="question-title">{answers.map((answer, index) => {
+    const correct = correctIndex === index;
+    const wrong = correctIndex !== undefined && selectedIndex === index && !correct;
+    return <button className={`answer-card ${selectedIndex === index ? 'selected' : ''} ${correct ? 'correct' : ''} ${wrong ? 'wrong' : ''}`} key={index} onClick={() => onAnswer(index)} disabled={disabled} aria-label={`Answer ${String.fromCharCode(65 + index)}: ${answer}${correct ? ', correct answer' : wrong ? ', your answer, incorrect' : ''}`} aria-pressed={selectedIndex === index}><span className="answer-letter">{String.fromCharCode(65 + index)}</span><span className="answer-text">{answer}<small className="answer-hint">PRESS {index + 1}</small></span>{correct && <span className="answer-mark">✓ Correct</span>}{wrong && <span className="answer-mark">✕ Your choice</span>}</button>;
+  })}</div></>;
 }
