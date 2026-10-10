@@ -2,8 +2,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import PartySocket from 'partysocket';
 import { PublicGameRoom, ClientMessage, ServerMessage } from '@/types/game';
+import { resolveMultiplayerHost } from '@/lib/multiplayer-host';
 
-const HOST = process.env.NEXT_PUBLIC_MULTIPLAYER_HOST ?? process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? 'localhost:1999';
 interface UsePartySocketReturn {
   gameState: PublicGameRoom | null; error: string | null; connected: boolean;
   myId: string | null; ownAnswer: number | null; pendingAnswer: boolean;
@@ -25,6 +25,19 @@ export function usePartySocket(roomCode: string | null, onStateUpdate?: (room: P
   useEffect(() => { callbackRef.current = onStateUpdate; });
   useEffect(() => {
     if (!roomCode) return;
+    const endpoint = resolveMultiplayerHost(process.env.NEXT_PUBLIC_MULTIPLAYER_HOST, process.env.NEXT_PUBLIC_PARTYKIT_HOST, window.location);
+    if ('error' in endpoint) { setError(endpoint.error ?? 'Multiplayer is not configured.'); return; }
+    let connectionTimer: ReturnType<typeof setTimeout> | undefined;
+    let disposed = false;
+    const clearConnectionTimer = () => { clearTimeout(connectionTimer); connectionTimer = undefined; };
+    const watchConnection = () => {
+      if (disposed || connectionTimer !== undefined) return;
+      connectionTimer = setTimeout(() => {
+        connectionTimer = undefined;
+        setError('The multiplayer server is not responding. Check your connection. The site owner should verify the Cloudflare Worker deployment and NEXT_PUBLIC_MULTIPLAYER_HOST in Vercel. Reconnection will continue automatically.');
+      }, 12000);
+    };
+    watchConnection();
     const storageKey = `wisquiz:seat:${roomCode}`;
     let session: string;
     try {
@@ -39,17 +52,18 @@ export function usePartySocket(roomCode: string | null, onStateUpdate?: (room: P
     sessionRef.current = session;
     persistProfileRef.current = persistProfile;
     persistProfile();
-    const socket = new PartySocket({ host: HOST, room: roomCode, party: 'game' });
+    const socket = new PartySocket({ host: endpoint.host, protocol: endpoint.protocol, room: roomCode, party: 'game' });
     socketRef.current = socket;
     socket.addEventListener('open', () => {
-      setConnected(true); setError(null);
+      setConnected(true);
       if (profileRef.current) socket.send(JSON.stringify({ ...profileRef.current, session }));
     });
-    socket.addEventListener('close', () => { setConnected(false); setPendingAnswer(false); });
+    socket.addEventListener('close', () => { setConnected(false); setPendingAnswer(false); watchConnection(); });
     socket.addEventListener('message', (event: MessageEvent<string>) => {
       let message: ServerMessage;
       try { message = JSON.parse(event.data); } catch { return; }
       if (message.type === 'state-update') {
+        clearConnectionTimer(); setError(null);
         stateRef.current = message.room;
         setGameState(message.room);
         if (message.selfId) setMyId(message.selfId);
@@ -59,9 +73,11 @@ export function usePartySocket(roomCode: string | null, onStateUpdate?: (room: P
       } else if (message.type === 'answer-accepted') {
         if (message.questionIndex === stateRef.current?.currentQuestionIndex) setOwnAnswer(message.answerIndex);
         setPendingAnswer(false);
-      } else if (message.type === 'error') { setError(message.message); setPendingAnswer(false); }
+      } else if (message.type === 'error') { clearConnectionTimer(); setError(message.message); setPendingAnswer(false); }
     });
     return () => {
+      disposed = true;
+      clearConnectionTimer();
       socket.close(); socketRef.current = null; stateRef.current = null;
       setConnected(false); setGameState(null); setMyId(null); setOwnAnswer(null); setPendingAnswer(false);
     };

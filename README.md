@@ -41,6 +41,10 @@ Open [localhost:3000](http://localhost:3000). Room Worker: port 1999. `pnpm dev:
 
 ## Free hosting
 
+**Vercel hosts the frontend; deploy the multiplayer Worker separately to Cloudflare.** Then set `NEXT_PUBLIC_MULTIPLAYER_HOST` in Vercel and redeploy the frontend. Vercel deployment alone cannot run this project's Cloudflare room server. Follow the [step-by-step Vercel + Cloudflare setup and troubleshooting](USAGE.md#vercel-frontend--cloudflare-multiplayer-first-deployment).
+
+On Windows, double-click **Setup-Cloudflare.cmd** to install dependencies, authorize Cloudflare, deploy the Worker and print the Vercel setting. Complete the browser login when prompted; the script does not change your hosting plan or Vercel settings.
+
 Retain an eligible free frontend host and deploy rooms directly to your Cloudflare account with Wrangler. `wrangler.jsonc` creates **SQLite-backed** Durable Objects, eligible for Workers Free. Quotas are finite; verify account eligibility and actual traffic before publishing. No paid plan or cloud resource was provisioned by this implementation.
 
 The retired PartyKit endpoint was removed from `vercel.json`. Set `NEXT_PUBLIC_MULTIPLAYER_HOST` to the deployed Worker **hostname**, without scheme/path, and rebuild. `NEXT_PUBLIC_PARTYKIT_HOST` remains a migration alias; remove/update stale hosting-dashboard values. Local default: `localhost:1999`.

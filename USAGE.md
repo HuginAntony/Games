@@ -14,7 +14,7 @@ Choose name/avatar after selecting Host/Join/Solo. Select a category from the lo
 
 Keys 1–4 submit an answer outside form fields. Sending/locked-in/reconnecting states show whether the server accepted it. Accepted answers restore after refresh. A nickname alone cannot reclaim another player's seat. Hosts retain controls through short refreshes; ten seconds of absence transfers controls.
 
-Appearance offers three themes and reduced motion. Sound starts muted. Device reduced-motion settings take precedence. Every reveal allows at least five seconds to read, independent of animation duration.
+Appearance offers three themes and reduced motion. Sound starts muted. Device reduced-motion settings take precedence. Reveals default to four seconds, independent of animation duration; hosts can choose longer durations.
 
 ## Solo / offline
 
@@ -63,6 +63,61 @@ These explicit opt-in tests skip without their environment variables. The main b
 
 ## Free online deployment
 
+### Vercel frontend + Cloudflare multiplayer: first deployment
+
+**Current Worker, deployed and checked 10 October 2026:** `https://wisquiz-multiplayer.huginantony.workers.dev`. `/health` passed, and a live two-player secure WebSocket test verified shared questions/deadlines, private answers and the four-second reveal default. For this deployment, set `NEXT_PUBLIC_MULTIPLAYER_HOST=wisquiz-multiplayer.huginantony.workers.dev` in Vercel, then rebuild/redeploy the frontend. The Vercel frontend configuration has not been changed by the agent.
+
+**Windows shortcut:** double-click `Setup-Cloudflare.cmd` in the Games folder. It finds the bundled/installed pnpm (or uses Corepack), installs dependencies, opens Cloudflare login, checks and deploys the production Worker, then checks `/health`. Complete browser authorization yourself. It prints the exact Vercel environment variable and saves it in `.validation-worker/multiplayer-host.txt`; add that setting in Vercel and redeploy the frontend. The script stops on errors and never changes your plan or Vercel settings. You can rerun it after resolving an error. `Setup-Cloudflare.cmd -CheckOnly` verifies prerequisites without installing, logging in or deploying. The launcher bypasses execution policy only for its own PowerShell process; it does not change your system policy.
+
+Deploying to Vercel alone does **not** deploy `server/worker.ts`. This release needs both the Next.js frontend and the Cloudflare room Worker. Keep Vercel for the site; the browser connects directly to the Worker for multiplayer. No Vercel rewrite or paid realtime service is needed.
+
+1. Create/sign in to your Cloudflare account. Use the **Workers Free** plan; a purchased domain is unnecessary. The configuration already uses SQLite-backed Durable Objects, supported on Free. Enable/create your account's `workers.dev` subdomain if prompted by Cloudflare.
+2. Open PowerShell in the game project. Install dependencies if necessary and run:
+
+   ```powershell
+   cd "E:\Development\Hugin AI\Games"
+   pnpm install
+   pnpm exec wrangler login
+   pnpm deploy:check
+   pnpm deploy:party
+   ```
+
+   Login opens a browser authorization flow for your own account. `deploy:check` checks the bundle without publishing. `deploy:party` publishes **wisquiz-multiplayer** and creates its configured SQLite room namespace. If prompted to select an account, select your Free account. If prompted for a paid upgrade, stop and check that the configuration uses `new_sqlite_classes`, rather than legacy KV-backed objects. Do not run `--env test` for the production deployment.
+
+3. Copy the **actual URL printed by Wrangler**, for example `https://wisquiz-multiplayer.your-subdomain.workers.dev`. Verify the deployment:
+
+   ```powershell
+   Invoke-RestMethod 'https://wisquiz-multiplayer.your-subdomain.workers.dev/health'
+   ```
+
+   Replace the example with your printed URL. Expected fields: `status: ok` and `transport: partyserver`. A root-path 404 is normal; `/health` is the check. Health confirms the Worker endpoint, not a full multiplayer game.
+
+4. In your **Vercel project → Settings → Environment Variables**, add:
+
+   ```text
+   NEXT_PUBLIC_MULTIPLAYER_HOST=wisquiz-multiplayer.your-subdomain.workers.dev
+   ```
+
+   Use your actual hostname, preferably without `https://` or a trailing slash. Set it for **Production**, and **Preview** if preview builds should support multiplayer. Remove old `NEXT_PUBLIC_PARTYKIT_HOST` overrides. This public hostname is not a secret; do not put Cloudflare account tokens into frontend variables.
+
+5. **Redeploy the Vercel frontend after setting the variable**, using the updated code. Next.js embeds `NEXT_PUBLIC_*` values at build time; changing the dashboard value does not update an already-built app. If redeploying an older build, disable reuse of its build cache to ensure a fresh build. When importing the whole workspace repository, Vercel's root directory must point to `Games`.
+6. Open the new Vercel deployment in two independent browser profiles/devices. Host a fresh room, join it on the other device, mark ready, and play a question. Check that both see the same question and reveal. A separate incognito window provides an independent seat; two normal tabs share one seat intentionally.
+
+### Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| Multiplayer not configured | Add the public Worker hostname in the matching Vercel environment and rebuild/redeploy. |
+| Host points at localhost | Remove `localhost:1999` from deployed frontend variables. It refers to each player's device. |
+| Multiplayer server not responding | Visit the actual Worker's `/health`; confirm spelling, deployment success, network access and free quotas. Automatic reconnect remains active. |
+| Worker health passes but room fails | Browser Network → WS should target `wss://YOUR_WORKER/parties/game/ROOMCODE?...`, not the Vercel domain or localhost. Successful upgrade uses status 101. Tail the Worker with `pnpm exec wrangler tail --env ""` for server errors. Do not post seat secrets or full message payloads in diagnostics. |
+| Works in Preview but not Production | Set the variable separately for Production and deploy a fresh Production build. |
+| Old hostname still used | Remove stale legacy variables, rebuild, then reload the browser. Finish old games before replacing their backend. |
+
+References: [Next.js build-time public variables](https://nextjs.org/docs/app/guides/environment-variables), [Vercel environment variables](https://vercel.com/docs/environment-variables), [Cloudflare Free SQLite Durable Objects](https://developers.cloudflare.com/durable-objects/platform/pricing/).
+
+### Hosting boundaries
+
 The frontend and room Worker are separate deployable parts in this release. Cloudflare Workers Free supports SQLite-backed Durable Objects. Use a Free account and verify quotas; Vercel Hobby is limited to personal/non-commercial use. Official sources are linked in the README.
 
 ```powershell
@@ -88,4 +143,4 @@ Free quotas are finite. Current Durable Objects documentation lists 100,000 requ
 
 Delivered: simultaneous Classic multiplayer, solo, three themes, recovery, settings, score/accuracy/streak summaries, QR/link sharing, same-party rematch and offline starter play. Pass-and-play, Confidence/Double down, teams, TV/spectators, desktop LAN hosting and Vite/single-deployment consolidation are future milestones.
 
-Rollback frontend and Worker together: the join/projection protocol changed, and old clients cannot safely use the new server. Clearing original browser storage loses the seat secret. No cloud deployment occurred during local implementation.
+Rollback frontend and Worker together: the join/projection protocol changed, and old clients cannot safely use the new server. Clearing original browser storage loses the seat secret. The multiplayer Worker was deployed and checked on 10 October 2026; Vercel environment configuration and frontend redeployment remain the owner's final setup step.

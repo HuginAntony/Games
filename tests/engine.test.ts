@@ -5,6 +5,20 @@ import { DEFAULT_SETTINGS, CATEGORY_OPTIONS, GameRoom } from '../types/game';
 import { getCuratedQuestions } from '../lib/questions';
 import { loadQuestionDeck, decodeEntities } from '../lib/opentdb';
 import { calculateScore } from '../lib/scoring';
+import { resolveMultiplayerHost } from '../lib/multiplayer-host';
+
+test('deployed multiplayer requires a real endpoint while local development keeps its default', () => {
+  const deployed = { hostname: 'wisquiz.vercel.app', protocol: 'https:' };
+  assert.match(resolveMultiplayerHost(undefined, undefined, deployed).error!, /not configured/);
+  assert.match(resolveMultiplayerHost('localhost:1999', undefined, deployed).error!, /localhost/);
+  assert.match(resolveMultiplayerHost('127.0.0.1:1999', undefined, deployed).error!, /localhost/);
+  assert.deepEqual(resolveMultiplayerHost(undefined, undefined, { hostname: 'localhost', protocol: 'http:' }), { host: 'localhost:1999', protocol: 'ws' });
+  assert.deepEqual(resolveMultiplayerHost(' https://wisquiz-multiplayer.example.workers.dev/ ', undefined, deployed), { host: 'wisquiz-multiplayer.example.workers.dev', protocol: 'wss' });
+  assert.deepEqual(resolveMultiplayerHost('', 'legacy.example.workers.dev', deployed), { host: 'legacy.example.workers.dev', protocol: 'wss' });
+  for (const invalid of ['https://example.com/parties/game/ABC123', 'https://name:secret@example.com', 'https://example.com?x=1', 'file:///tmp/server', 'not a host']) {
+    assert.match(resolveMultiplayerHost(invalid, undefined, deployed).error!, /invalid/);
+  }
+});
 
 function activeRoom(): GameRoom {
   const lobby = createRoom('ABC123', 'host', 'Alex');
