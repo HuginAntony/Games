@@ -10,7 +10,7 @@ A modern trivia party table. **Everyone answers the same question at the same ti
 - Up to 12 players join. Guests mark themselves ready; the host starts.
 - Answers and score changes stay private until the shared reveal. Each answer is acknowledged by the server.
 - Correct answers earn 100 points plus 10 per whole second remaining, capped at 100 bonus points. Maximum 200 points at every timer preset.
-- Choose 5/10/15/20 questions, category, difficulty, 10/15/20/30-second answer windows and 5/8/12-second reveals.
+- Choose 5/10/15/20 questions, category, difficulty, 10/15/20/30-second answer windows and 4/5/8/12-second reveals (4 seconds by default).
 - Rematch with the same party/settings. Review answers, accuracy and longest streak.
 - Solo supports timed/untimed practice, a best for matching settings, and a bundled pack independent of the question provider.
 - Three persistent themes: Midnight Social, Prism Lounge and Neon Studio. Sound controls, reduced motion, keyboard answers 1–4 and accessible status feedback. Motion settings preserve the full reveal reading time.

@@ -10,9 +10,9 @@ export interface GameSettings {
   category: Category;
   difficulty: 'mixed' | 'easy' | 'medium' | 'hard';
   questionSeconds: 10 | 15 | 20 | 30;
-  revealSeconds: 5 | 8 | 12;
+  revealSeconds: 4 | 5 | 8 | 12;
 }
-export const DEFAULT_SETTINGS: GameSettings = { rounds: 10, category: 'mixed', difficulty: 'mixed', questionSeconds: 15, revealSeconds: 8 };
+export const DEFAULT_SETTINGS: GameSettings = { rounds: 10, category: 'mixed', difficulty: 'mixed', questionSeconds: 15, revealSeconds: 4 };
 export interface Player {
   id: string; nickname: string; avatar: string; score: number; answeredIndex: number | null;
   answered: boolean; isHost: boolean; connected: boolean; ready: boolean; roundPoints: number;

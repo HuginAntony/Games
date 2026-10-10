@@ -12,7 +12,7 @@ export function SettingsForm({ value, onChange, disabled = false }: { value: Gam
     <label>Difficulty<select aria-label="Difficulty" disabled={disabled} value={value.difficulty} onChange={e => onChange({ difficulty: e.target.value as GameSettings['difficulty'] })}>{['mixed', 'easy', 'medium', 'hard'].map(v => <option key={v} value={v}>{v[0].toUpperCase() + v.slice(1)}</option>)}</select></label>
     <label>Questions<select aria-label="Questions" disabled={disabled} value={value.rounds} onChange={e => onChange({ rounds: Number(e.target.value) as GameSettings['rounds'] })}>{[5, 10, 15, 20].map(v => <option key={v} value={v}>{v} questions</option>)}</select></label>
     <label>Answer time<select aria-label="Answer time" disabled={disabled} value={value.questionSeconds} onChange={e => onChange({ questionSeconds: Number(e.target.value) as GameSettings['questionSeconds'] })}>{[10, 15, 20, 30].map(v => <option key={v} value={v}>{v} seconds</option>)}</select></label>
-    <label>Reveal reading time<select aria-label="Reveal reading time" disabled={disabled} value={value.revealSeconds} onChange={e => onChange({ revealSeconds: Number(e.target.value) as GameSettings['revealSeconds'] })}>{[5, 8, 12].map(v => <option key={v} value={v}>{v} seconds</option>)}</select></label>
+    <label>Reveal reading time<select aria-label="Reveal reading time" disabled={disabled} value={value.revealSeconds} onChange={e => onChange({ revealSeconds: Number(e.target.value) as GameSettings['revealSeconds'] })}>{[4, 5, 8, 12].map(v => <option key={v} value={v}>{v} seconds</option>)}</select></label>
     <div><label>Rules</label><p className="tiny" style={{ marginTop: 10 }}>Classic · 100 for a correct answer, plus up to 100 speed points.</p></div>
   </div>;
 }

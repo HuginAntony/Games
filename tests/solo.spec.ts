@@ -2,15 +2,16 @@ import { test, expect } from '@playwright/test';
 const questions = Array.from({ length: 5 }, (_, i) => ({ category: 'General', question: `A safe test question ${i + 1}`, answers: ['First answer', 'Second answer', 'Third answer', 'Fourth answer'], correctIndex: 0 }));
 test('solo reveals for the full reading duration under reduced motion and reviews a full match', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.clock.install();
   await page.route('**/api/questions**', route => route.fulfill({ json: questions, headers: { 'X-Quiz-Source': 'opentdb' } }));
-  await page.goto('/game/solo?name=Tester&rounds=5&untimed=1&revealSeconds=5');
+  await page.goto('/game/solo?name=Tester&rounds=5&untimed=1');
+  await expect(page.locator('.question-title')).toHaveText(questions[0].question);
+  await page.clock.install();
   for (let index = 0; index < 5; index++) {
     await expect(page.locator('.question-title')).toHaveText(questions[index].question);
     await page.getByRole('button', { name: 'Answer A: First answer', exact: true }).click();
     await expect(page.getByRole('status')).toHaveText('Correct. Nicely played.');
     await expect(page.locator('.points')).toHaveText('+100');
-    await page.clock.fastForward(4900);
+    await page.clock.fastForward(3900);
     await expect(page.locator('.question-title')).toHaveText(questions[index].question);
     await page.clock.fastForward(200);
   }

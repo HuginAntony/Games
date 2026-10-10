@@ -33,7 +33,7 @@ export function removePlayer(room: GameRoom, id: string): GameRoom {
 export function validateSettings(input: unknown, previous = DEFAULT_SETTINGS): GameSettings {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid party settings.');
   const value = { ...previous, ...input } as GameSettings;
-  if (![5, 10, 15, 20].includes(value.rounds) || !CATEGORY_OPTIONS.some(c => c.value === value.category) || !['mixed', 'easy', 'medium', 'hard'].includes(value.difficulty) || ![10, 15, 20, 30].includes(value.questionSeconds) || ![5, 8, 12].includes(value.revealSeconds)) throw new Error('Invalid party settings.');
+  if (![5, 10, 15, 20].includes(value.rounds) || !CATEGORY_OPTIONS.some(c => c.value === value.category) || !['mixed', 'easy', 'medium', 'hard'].includes(value.difficulty) || ![10, 15, 20, 30].includes(value.questionSeconds) || ![4, 5, 8, 12].includes(value.revealSeconds)) throw new Error('Invalid party settings.');
   return { rounds: value.rounds, category: value.category, difficulty: value.difficulty, questionSeconds: value.questionSeconds, revealSeconds: value.revealSeconds };
 }
 export function startGame(room: GameRoom, questions: Question[], now = Date.now()): GameRoom {

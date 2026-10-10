@@ -64,10 +64,10 @@ test('round durations and reveal reading time survive serialization', () => {
   room = JSON.parse(JSON.stringify(room));
   assert.equal(room.phaseEndsAt, 19000);
   room = revealRound(room, 19000);
-  assert.equal(room.phaseEndsAt, 27000);
-  room = advanceRound(room, 27000);
+  assert.equal(room.phaseEndsAt, 23000);
+  room = advanceRound(room, 23000);
   assert.equal(room.currentQuestionIndex, 1);
-  assert.equal(room.phaseEndsAt, 42000);
+  assert.equal(room.phaseEndsAt, 38000);
 });
 test('round totals and rematch are controlled by the deck settings', () => {
   let room = activeRoom();
@@ -90,6 +90,8 @@ test('speed scoring stays within 100–200 and caps the ten-second bonus', () =>
 test('runtime settings validation rejects invalid options', () => {
   for (const value of [{ rounds: 50 }, { rounds: NaN }, { category: 'unknown' }, { difficulty: 'impossible' }, { questionSeconds: 1 }, { revealSeconds: 0 }, null, []]) assert.throws(() => validateSettings(value), /Invalid/);
   assert.equal(validateSettings({ rounds: 20 }).rounds, 20);
+  assert.equal(validateSettings({}).revealSeconds, 4);
+  assert.equal(validateSettings({ revealSeconds: 4 }).revealSeconds, 4);
 });
 test('curated decks contain complete unique multiple-choice category rounds', () => {
   for (const category of CATEGORY_OPTIONS) {
