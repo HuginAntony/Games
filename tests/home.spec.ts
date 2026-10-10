@@ -29,6 +29,7 @@ test('solo setup passes selected settings and name', async ({ page }) => {
   await page.getByLabel('Questions', { exact: true }).selectOption('5');
   await page.getByLabel('Untimed practice').check();
   await page.getByRole('button', { name: 'Start solo practice →' }).click();
-  await expect(page).toHaveURL(/game\/solo.*name=Curious/);
-  await expect(page).toHaveURL(/untimed=1/);
+  await expect(page).toHaveURL(/\/game\/solo$/);
+  await expect(page.getByRole('heading', { name: "Curious's table" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('Untimed', { exact: true })).toBeVisible();
 });

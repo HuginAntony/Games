@@ -12,6 +12,8 @@ Open `http://localhost:3000`, host a party and share its code. Use separate brow
 
 Choose name/avatar after selecting Host/Join/Solo. Select a category from the lounge or change settings in the lobby. Guests press **I'm ready**; changing settings resets their ready states. Everyone receives identical questions/deadlines. One host can rehearse alone or invite up to 12 players.
 
+Room links contain only the room code, such as `/lobby/ABC123`. The lounge hands nickname/avatar and initial setup to the next screen using tab-local `sessionStorage`; it is not included in shared URLs. Old `name`, `avatar`, `host` and timing/category query parameters are ignored and removed. Invite recipients enter their own nickname. Refresh still resumes the authenticated seat using the existing browser-held seat secret. Settings and host commands are validated by the Worker, not trusted because they came from browser storage. Solo setup also uses tab-local storage; the non-sensitive `offline=1` switch only selects bundled offline questions.
+
 Keys 1–4 submit an answer outside form fields. Sending/locked-in/reconnecting states show whether the server accepted it. Accepted answers restore after refresh. A nickname alone cannot reclaim another player's seat. Hosts retain controls through short refreshes; ten seconds of absence transfers controls.
 
 Appearance offers three themes and reduced motion. Sound starts muted. Device reduced-motion settings take precedence. Reveals default to four seconds, independent of animation duration; hosts can choose longer durations.

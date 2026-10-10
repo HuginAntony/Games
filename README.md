@@ -41,6 +41,8 @@ Open [localhost:3000](http://localhost:3000). Room Worker: port 1999. `pnpm dev:
 
 ## Free hosting
 
+Player details and game setup stay out of room URLs. Only the room code is shared; tab-local session storage carries initial setup and the Worker validates settings/host authority. Editing old query parameters cannot change room setup or grant host access. Invitees enter their own names, and authenticated seats still resume after refresh.
+
 **Vercel hosts the frontend; deploy the multiplayer Worker separately to Cloudflare.** Then set `NEXT_PUBLIC_MULTIPLAYER_HOST` in Vercel and redeploy the frontend. Vercel deployment alone cannot run this project's Cloudflare room server. Follow the [step-by-step Vercel + Cloudflare setup and troubleshooting](USAGE.md#vercel-frontend--cloudflare-multiplayer-first-deployment).
 
 On Windows, double-click **Setup-Cloudflare.cmd** to install dependencies, authorize Cloudflare, deploy the Worker and print the Vercel setting. Complete the browser login when prompted; the script does not change your hosting plan or Vercel settings.

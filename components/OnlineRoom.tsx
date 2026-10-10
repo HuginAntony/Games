@@ -1,22 +1,23 @@
 'use client';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { usePartySocket } from '@/hooks/usePartySocket';
 import { useSound } from '@/hooks/useSound';
 import { AvatarPicker, Seats, SettingsForm, Standings, Timer, usePhaseClock } from '@/components/PartyUi';
 import { QuestionCard } from '@/components/QuestionCard/QuestionCard';
 import { FinalResults, ReviewAnswer } from '@/components/FinalResults';
-import { settingsFromQuery } from '@/lib/client-settings';
+import { loadSessionEntry, SessionEntry } from '@/lib/session-entry';
 
 function Room() {
   const params = useParams<{ code: string }>();
-  const query = useSearchParams();
   const router = useRouter();
   const code = params.code.toUpperCase();
-  const [nickname, setNickname] = useState(query.get('name') || '');
-  const [avatar, setAvatar] = useState(query.get('avatar') || '⚡');
-  const [entered, setEntered] = useState(!!query.get('name'));
+  const [nickname, setNickname] = useState('');
+  const [avatar, setAvatar] = useState('⚡');
+  const [entered, setEntered] = useState(false);
+  const [entry, setEntry] = useState<SessionEntry | null>(null);
+  const [entryLoaded, setEntryLoaded] = useState(false);
   const [localError, setLocalError] = useState('');
   const [shareMessage, setShareMessage] = useState('');
   const [inviteUrl, setInviteUrl] = useState('');
@@ -32,16 +33,24 @@ function Room() {
 
   useEffect(() => { setInviteUrl(`${window.location.origin}/lobby/${code}`); }, [code]);
   useEffect(() => {
-    if (connected && entered && !joined.current) { joined.current = true; send({ type: 'join', nickname, avatar, create: query.get('host') === '1' }); }
-  }, [connected, entered, nickname, avatar, send, query]);
+    const saved = loadSessionEntry(code);
+    setEntry(saved);
+    if (saved) { setNickname(saved.nickname); setAvatar(saved.avatar); setEntered(true); }
+    setEntryLoaded(true);
+    // Old query parameters are ignored, including host=1; authority comes from the room server.
+    if (window.location.search) window.history.replaceState(window.history.state, '', window.location.pathname);
+  }, [code]);
   useEffect(() => {
-    if (me?.isHost && room?.phase === 'lobby' && query.get('host') === '1' && !appliedSettings.current) {
+    if (connected && entryLoaded && entered && !joined.current) { joined.current = true; send({ type: 'join', nickname, avatar, create: entry?.create === true }); }
+  }, [connected, entryLoaded, entered, nickname, avatar, send, entry]);
+  useEffect(() => {
+    if (me?.isHost && room?.phase === 'lobby' && entry?.create && !appliedSettings.current) {
       appliedSettings.current = true;
       const key = `wisquiz:settings-applied:${code}:${me.id}`;
       try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, 'true'); } catch { /* Still apply once in this page session. */ }
-      send({ type: 'settings', settings: settingsFromQuery(query) });
+      send({ type: 'settings', settings: entry.settings });
     }
-  }, [me?.isHost, room?.phase, send, query]);
+  }, [me?.isHost, room?.phase, send, entry]);
   useEffect(() => { setAttempt(null); }, [room?.currentQuestionIndex, room?.phase === 'lobby']);
   useEffect(() => { if (error) setAttempt(null); }, [error]);
   useEffect(() => {

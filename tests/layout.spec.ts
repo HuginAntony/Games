@@ -1,3 +1,4 @@
+import { gotoPrepared } from './prepare-entry';
 import { test, expect } from '@playwright/test';
 import { createRoom, joinRoom, startGame, beginRound, toPublicRoom, submitAnswer, revealRound } from '../lib/game-engine';
 import { getCuratedQuestions } from '../lib/questions';
@@ -15,7 +16,7 @@ test('twelve seats and long answers stay contained at phone, landscape and deskt
       socket.send(JSON.stringify({ type: 'state-update', room: toPublicRoom(room), selfId: 'host', ownAnswer: room.players.host.answeredIndex }));
     });
   });
-  await page.goto('/game/LAYOUT?name=Host');
+  await gotoPrepared(page, '/game/LAYOUT?name=Host');
   await expect(page.locator('.seat')).toHaveCount(12);
   fs.mkdirSync('docs/revamp/implementation', { recursive: true });
   for (const [width, height] of [[320,568],[390,844],[844,390],[768,1024],[1440,900]]) {
@@ -44,7 +45,7 @@ test('twelve seats and long answers stay contained at phone, landscape and deskt
   await expect(page.locator('.reveal-summary')).toBeVisible();
 });
 test('lounge mobile controls stay contained and themes keep identical structure', async ({ page }) => {
-  await page.goto('/');
+  await gotoPrepared(page, '/');
   await page.getByRole('button', { name: 'Appearance' }).click();
   for (const theme of ['midnight','prism','neon']) {
     await page.getByLabel('Table theme').selectOption(theme);

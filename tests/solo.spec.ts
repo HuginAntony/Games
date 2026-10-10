@@ -1,9 +1,10 @@
+import { gotoPrepared } from './prepare-entry';
 import { test, expect } from '@playwright/test';
 const questions = Array.from({ length: 5 }, (_, i) => ({ category: 'General', question: `A safe test question ${i + 1}`, answers: ['First answer', 'Second answer', 'Third answer', 'Fourth answer'], correctIndex: 0 }));
 test('solo reveals for the full reading duration under reduced motion and reviews a full match', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.route('**/api/questions**', route => route.fulfill({ json: questions, headers: { 'X-Quiz-Source': 'opentdb' } }));
-  await page.goto('/game/solo?name=Tester&rounds=5&untimed=1');
+  await gotoPrepared(page, '/game/solo?name=Tester&rounds=5&untimed=1');
   await expect(page.locator('.question-title')).toHaveText(questions[0].question);
   await page.clock.install();
   for (let index = 0; index < 5; index++) {
@@ -25,7 +26,7 @@ test('solo reveals for the full reading duration under reduced motion and review
 });
 test('provider failure falls back to a playable local pack without injected markup', async ({ page }) => {
   await page.route('**/api/questions**', route => route.abort());
-  await page.goto('/game/solo?name=Tester&rounds=5');
+  await gotoPrepared(page, '/game/solo?name=Tester&rounds=5');
   await expect(page.locator('.question-title')).toBeVisible();
   await expect(page.getByText('Starter pack · difficulty may vary.', { exact: false })).toBeVisible();
   await expect(page.locator('.answer-card')).toHaveCount(4);
@@ -33,7 +34,7 @@ test('provider failure falls back to a playable local pack without injected mark
 });
 test('untrusted content is rendered as text', async ({ page }) => {
   await page.route('**/api/questions**', route => route.fulfill({ json: questions.map(q => ({ ...q, question: '<img src=x onerror=alert(1)>', answers: ['<script>alert(1)</script>', 'B', 'C', 'D'] })) }));
-  await page.goto('/game/solo?rounds=5');
+  await gotoPrepared(page, '/game/solo?rounds=5');
   await expect(page.locator('.question-title')).toHaveText('<img src=x onerror=alert(1)>');
   await expect(page.locator('.quiz-table img,.quiz-table script')).toHaveCount(0);
 });

@@ -1,10 +1,10 @@
 'use client';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { GameRoom, Question } from '@/types/game';
+import { DEFAULT_SETTINGS, GameRoom, Question } from '@/types/game';
 import { createRoom, startGame, beginRound, submitAnswer, revealRound, advanceRound } from '@/lib/game-engine';
 import { getCuratedQuestions } from '@/lib/questions';
-import { settingsFromQuery } from '@/lib/client-settings';
+import { loadSessionEntry, SessionEntry } from '@/lib/session-entry';
 import { QuestionCard } from '@/components/QuestionCard/QuestionCard';
 import { FinalResults, ReviewAnswer } from '@/components/FinalResults';
 import { Timer, usePhaseClock } from '@/components/PartyUi';
@@ -12,10 +12,17 @@ import { useSound } from '@/hooks/useSound';
 
 function Solo() {
   const query = useSearchParams();
-  const settings = settingsFromQuery(query);
-  const nickname = query.get('name')?.slice(0, 20) || 'Curious player';
-  const avatar = query.get('avatar') || '⚡';
-  const untimed = query.get('untimed') === '1';
+  const [entry, setEntry] = useState<SessionEntry | null>(null);
+  const [entryLoaded, setEntryLoaded] = useState(false);
+  const settings = entry?.settings || DEFAULT_SETTINGS;
+  const nickname = entry?.nickname || 'Curious player';
+  const avatar = entry?.avatar || '⚡';
+  const untimed = entry?.untimed || false;
+  const offline = query.get('offline') === '1';
+  useEffect(() => {
+    setEntry(loadSessionEntry('solo')); setEntryLoaded(true);
+    if (window.location.search) window.history.replaceState(window.history.state, '', window.location.pathname + (offline ? '?offline=1' : ''));
+  }, [offline]);
   const [room, setRoom] = useState<GameRoom | null>(null);
   const current = useRef<GameRoom | null>(null);
   const [generation, setGeneration] = useState(0);
@@ -28,6 +35,7 @@ function Solo() {
   const { play } = useSound();
   function update(value: GameRoom | null) { current.current = value; setRoom(value); }
   useEffect(() => {
+    if (!entryLoaded) return;
     let cancelled = false;
     const controller = new AbortController();
     update(null); setHistory([]); reviewed.current = -1; setError('');
@@ -35,7 +43,7 @@ function Solo() {
       let questions: Question[];
       let label = 'Starter pack · difficulty may vary';
       try {
-        if (query.get('offline') === '1' || !navigator.onLine) throw new Error('Use local pack');
+        if (offline || !navigator.onLine) throw new Error('Use local pack');
         const response = await fetch('/api/questions?' + new URLSearchParams({ amount: String(settings.rounds), category: settings.category, difficulty: settings.difficulty }), { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]) });
         if (!response.ok) throw new Error('Question provider unavailable');
         questions = await response.json();
@@ -53,7 +61,7 @@ function Solo() {
     }
     load().catch(() => { if (!cancelled) setError('Unable to prepare this pack. Return to the lounge and try another pack.'); });
     return () => { cancelled = true; controller.abort(); };
-  }, [generation, query]);
+  }, [generation, entry, entryLoaded, offline]);
   useEffect(() => {
     if (!room) return;
     const phase = room.phase;

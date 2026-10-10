@@ -1,3 +1,4 @@
+import { gotoPrepared } from './prepare-entry';
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 test('two independent devices answer simultaneously, reconnect and rematch in the same room', async ({ browser }) => {
@@ -7,10 +8,10 @@ test('two independent devices answer simultaneously, reconnect and rematch in th
   const host = await hostContext.newPage(), guest = await guestContext.newPage();
   const code = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'A');
   try {
-    await host.goto(`/lobby/${code}?name=Host&host=1&rounds=5&revealSeconds=5`);
+    await gotoPrepared(host, `/lobby/${code}?name=Host&host=1&rounds=5&revealSeconds=5`);
     await expect(host.getByRole('heading', { name: 'The party starts here.' })).toBeVisible();
     await expect(host.getByLabel('Questions', { exact: true })).toHaveValue('5');
-    await guest.goto(`/lobby/${code}?name=Guest`);
+    await gotoPrepared(guest, `/lobby/${code}?name=Guest`);
     await expect(guest.getByRole('button', { name: "I'm ready" })).toBeVisible();
     await expect(host.getByRole('button', { name: 'Start game →' })).toBeDisabled();
     await guest.getByRole('button', { name: "I'm ready" }).click();

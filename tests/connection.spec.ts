@@ -1,3 +1,4 @@
+import { gotoPrepared } from './prepare-entry';
 import { test, expect } from '@playwright/test';
 
 test('a configured backend connects independent players and delivers a shared question', async ({ browser }) => {
@@ -5,9 +6,9 @@ test('a configured backend connects independent players and delivers a shared qu
   const code = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'A');
   try {
     const host = await hostContext.newPage(), guest = await guestContext.newPage();
-    await host.goto(`/lobby/${code}?name=Host&host=1&rounds=5`);
+    await gotoPrepared(host, `/lobby/${code}?name=Host&host=1&rounds=5`);
     await expect(host.getByRole('button', { name: 'Start game →' })).toBeEnabled();
-    await guest.goto(`/lobby/${code}?name=Guest`);
+    await gotoPrepared(guest, `/lobby/${code}?name=Guest`);
     await guest.getByRole('button', { name: "I'm ready" }).click();
     await host.getByRole('button', { name: 'Start game →' }).click();
     await expect(host.locator('.question-title')).toBeVisible({ timeout: 15000 });
@@ -29,7 +30,7 @@ test('an unreachable multiplayer server reports a useful error and keeps solo av
     }
     Object.defineProperty(window, 'WebSocket', { value: UnreachableSocket });
   });
-  await page.goto('/lobby/ABC123?name=Tester&host=1');
+  await gotoPrepared(page, '/lobby/ABC123?name=Tester&host=1');
   await expect(page.getByRole('heading', { name: 'Finding your table…' })).toBeVisible();
   await expect(page.locator('main [role="alert"]')).toContainText('multiplayer server is not responding', { timeout: 20000 });
   await expect(page.getByRole('heading', { name: 'Your table could not connect.' })).toBeVisible();
@@ -45,7 +46,7 @@ test('a deployed frontend without an endpoint reports configuration instead of d
     const response = await route.fetch({ url: `${baseURL}${url.pathname}${url.search}` });
     await route.fulfill({ response });
   });
-  await page.goto('https://wisquiz.example/lobby/ABC123?name=Tester&host=1');
+  await gotoPrepared(page, 'https://wisquiz.example/lobby/ABC123?name=Tester&host=1');
   await expect(page.locator('main [role="alert"]')).toContainText('Multiplayer is not configured');
   await expect(page.getByRole('heading', { name: 'Your table could not connect.' })).toBeVisible();
   expect(attemptedSockets).toBe(0);

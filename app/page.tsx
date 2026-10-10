@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { generateCode } from '@/lib/room-factory';
 import { DEFAULT_SETTINGS, GameSettings } from '@/types/game';
 import { AvatarPicker, SettingsForm } from '@/components/PartyUi';
+import { saveSessionEntry } from '@/lib/session-entry';
 
 export default function HomePage() {
   const router = useRouter();
@@ -22,11 +23,10 @@ export default function HomePage() {
     if (!name) { setError('Enter a nickname to take your seat.'); return; }
     if (mode === 'join' && !/^[A-Z2-9]{6}$/.test(code)) { setError('Enter a valid six-character room code.'); return; }
     try { localStorage.setItem('wisquiz:name', name); localStorage.setItem('wisquiz:avatar', avatar); } catch { /* Identity can still be provided to the room. */ }
-    const query = new URLSearchParams({ name, avatar });
-    if (mode !== 'join') for (const [key, value] of Object.entries(settings)) query.set(key, String(value));
-    if (mode === 'host') query.set('host', '1');
-    if (mode === 'solo') { if (untimed) query.set('untimed', '1'); router.push('/game/solo?' + query); }
-    else router.push('/lobby/' + (mode === 'host' ? generateCode() : code) + '?' + query);
+    const room = mode === 'solo' ? 'solo' : mode === 'host' ? generateCode() : code;
+    try { saveSessionEntry(room, { nickname: name, avatar, settings, create: mode === 'host', untimed }); }
+    catch (cause) { setError((cause as Error).message); return; }
+    router.push(mode === 'solo' ? '/game/solo' : '/lobby/' + room);
   }
   const packs = [{ value: 'mixed', title: 'The big mix', description: 'A little of everything', symbol: '✦' }, { value: 'science', title: 'Science & space', description: 'Think beyond the obvious', symbol: '◎' }, { value: 'entertainment', title: 'Screen & sound', description: 'For the culture lovers', symbol: '♫' }, { value: 'geography', title: 'World explorer', description: 'Places, people, possibilities', symbol: '↗' }] as const;
   return <main className="content"><div className="hero"><div><p className="eyebrow">Your next great game night</p><h1>Good company.<br />Great questions.</h1><p className="sub">Bring your people to the table. Everyone answers together, on their own device. A little knowledge, a little suspense, plenty to talk about.</p><div className="actions"><button className="button primary" onClick={() => { setMode('host'); setError(''); }}>Host a party ↗</button><button className="button quiet" onClick={() => { setMode('join'); setError(''); }}>Join with code</button></div><div className="hero-secondary"><button className="text-button" onClick={() => { setMode('solo'); setError(''); }}>Solo practice →</button><a className="text-button" href="/game/solo?offline=1">Play starter pack offline →</a></div><p className="tiny" style={{ marginTop: 18 }}>2–12 online · No account needed · No waiting for turns</p></div><div className="hero-art" aria-hidden="true"><div className="section-head"><span className="eyebrow">THE PARTY TABLE</span><span className="tiny">✦ WISQUIZ</span></div><p className="art-heading">Curiosity is your superpower.</p><div className="art-cards"><div className="art-card">✧<small>DISCOVER</small></div><div className="art-card">◎<small>CONNECT</small></div><div className="art-card">ϟ<small>COMPETE</small></div></div><p className="tiny center">A fresh question. A shared reveal. One more round.</p></div></div>
